@@ -162,6 +162,9 @@
 
 ##### [keras 安装](https://www.cnblogs.com/bnuvincent/p/7045324.html)
 
+> __TensorFlow是最著名的用于深度学习生产环境的框架。它有一个非常大非常棒的社区。然而，TensorFlow的使用不那么简单。另一方面，Keras是在TensorFlow基础上构建的高层API，比TF（TensorFlow的缩写）要易用很多。Keras的底层库使用Theano或TensorFlow，这两个库也称为Keras的后端。无论是Theano还是TensorFlow，都是一个“符号式”的库。__
+>
+
 - 创建tensorflow虚拟环境 C:> conda create -n tensorflow python=3.5，今后所有的东西都需要在该虚拟环境里进行，包括安装各种包和keras
 - 激活虚拟环境 C:> activate tensorflow 
 - [链接](https://www.tensorflow.org/install/#google-colab-tensorflow) pip install tensorflow
@@ -200,6 +203,7 @@
   > 向量组成的数组叫作矩阵（matrix）或二维张量（2D 张量）。矩阵有 2 个轴（通常叫作行和 列）
   >
   > 可以将矩阵直观地理解为数字组成的矩形网格
+
   - 第一个轴上的元素叫作行（row），第二个轴上的元素叫作列（column）。
 
 - 3D 张量与更高维张量 
@@ -310,7 +314,41 @@
 
 >  在 Numpy 中可以直接进行逐元素运算，速度非常快
 
+- 逐元素运算(是逐元素（element-wise）的运算)
+
+  > 运算独立地应用于张量中的每 个元素，也就是说，这些运算非常适合大规模并行实现
+
+  ```python
+  # 想对逐元素运算编写简单的Python 实现，那么 可以用 for 循环。
+  # 下列代码是对逐元素 relu 运算的简单实现。
+  def naive_relu(x):
+      # x是numpy的2d张量
+      # 如果不是二维数组就报错
+      assert len(x.shape) == 2
+      
+      x = x.copy()     # 避免覆盖输入张量
+      for i in range(x.shape[0]):
+          for j in range(x.shape[1]):
+              x[i,j] = max(x[i,j],0)
+      return x
+  # relu(x) 是 max(x, 0)
+  
+  
+  # 对加法采用相同的实现方式
+  def naive_add(x,y):
+      assert len(x.shape) == 2
+      assert x.shape == y.shape
+      
+      x = x.copy()
+      for i in range(x.shape[0]):
+          for j in range(x.shape[1]):
+              x[i,j] += y[i,j]
+      return x
+  # 根据同样的方法，你可以实现逐元素的乘法、减法等
+  ```
+
 - 广播
+
 - 不同形状张量运算时，较小的张量会被广播（broadcast）,以匹配较大张量的形状，广播包含一下两步
   1.  向较小的张量添加轴（叫作广播轴），使其 ndim 与较大的张量相同
   2. 将较小的张量沿着新轴重复，使其形状与较大的张量相同
@@ -321,15 +359,99 @@
   >
   > 与逐元素的运算不同，它将输入张量的元素合并在一起。 
 
+  - 在 Numpy、Keras、Theano 和 TensorFlow 中，都是用 * 实现逐元素乘积
 
+  -  Numpy 和 Keras 中，都是用标准的 dot 运算符来实现点积,TensorFlow 中的 点积使用了不同的语法
 
+    ```python
+    import numpy as np 
+    z = np.dot(x, y)
+    # 数学符号中的点（.）表示点积运算
+    z=x.y
+    
+    # 从数学的角度来看，点积运算做了什么？
+    def naive_vector_dot(x,y):
+        # x,y是numpy向量
+        assert x.shape == 1
+        assert y.shape == 1
+        assert x.shape[0] == y.shape[0]
+        
+        z = 0
+        for i in range(x.shape[0]):
+            z += x[i]*y[i]
+        return z
+    ```
 
+    - 只有元素个数相同的向量之间才能做点积,两个向量之间的点积是一个标量
 
+  - 可以对矩阵x和向量y做点积，返回值是一个向量
 
+    ```python
+    # 实现过程
+    import numpy as np
+    def naive_matrix_vector(x,y):
+        assert len(x.shape) == 2
+        assert len(y.shape) == 1
+        assert x.shape[1] = y.shape[0]
+        
+        z = np.zeros(x.shape[0])
+        for i in range(x.shape[0]):
+            for j in range(y.shape[0]):
+                z[i] += x[i,j] * y[j]
+        return z
+    ```
 
+    - 如果两个张量中有一个的 ndim 大于1，那么 dot 运算就不再是对称的，也就是说， dot(x, y) 不等于 dot(y, x)
 
+      ```
+      a = np.array([[1,2],[1,2]])
+      b = np.array([4,5])
+      print(np.dot(a,b))
+      print(np.dot(b,a))
+      >>>[14 14]
+      [ 9 18]
+      
+      a = np.array([1,2,3])
+      b = np.array([4,5,6])
+      print(np.dot(a,b))
+      print(np.dot(b,a))
+      >>>32
+      32
+      ```
 
+    - 点积可以推广到具有任意个轴的张量，最常见的应用可能就是两个==矩阵==之间的点积
 
+      - 对于两个矩阵 x 和 y，当且仅==当x.shape[1] == y.shape[0]时==，你才可以对它们做点积---dot(x,y)
+
+        ```python
+        # 简单实现
+        def naive_matrix_dot(x,y):
+            assert len(x.shape) == 2
+            assert len(y.shape) == 2
+            assert x.shape[1] = y.shape[0]
+            
+            z = np.zeros(x.shape[0],y.shape[1])
+            for i in range(x.shape[0]):
+                for j in range(y.shape[1]):
+                    row_x = x[i,:]
+                    column_y = y[:,j]
+                    z[i,j] = naive_vector_dot(row_x,column_y)
+        ```
+
+        ![010](D:\project\DL\03_pythonDL\img\010.JPG)
+
+        - x 的行和 y 的列必须大小相同，因 此 x 的宽度一定等于 y 的高度
+
+          > 如果你打算开发新的机器学习算法，可能经常要画这种图。 
+
+        - 可以对更高维的张量做点积，只要其形状匹配遵循与前面2D 张量相同的 原则：
+
+          >(a, b, c, d) . (d,) -> (a, b, c) 
+          >
+          >(a, b, c, d) . (d, e) -> (a, b, c, e)
+
+- 张量变形
+- 
 
 
 
