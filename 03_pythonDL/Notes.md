@@ -609,23 +609,182 @@
 
 ##### 3.1.1层：深度学习的基础组件
 
+> 神经网络的基本数据结构是==层==。层是一个数据处理模块，将一个 或多个输入张量转换为一个或多个输出张量,
+>
+> 有些层是无状态的，但大多数的层是有状态的， 即层的权重,
+>
+> 权重是利用随机梯度下降学到的一个或多个张量
 
+- 简单的向量数据保存在 形状为 (samples, features) 的 2D 张量中，通常用==密集连接层==［densely connected layer，也 叫==全连接层==（fully connected layer）或==密集层==（dense layer），对应于Keras 的 Dense 类］来处 理
+- 序列数据保存在形状为 (samples, timesteps, features) 的 3D 张量中，通常用循环 层（recurrent layer，比如Keras 的 LSTM 层）来处理。
+- 图像数据保存在4D 张量中，通常用二维 卷积层（Keras 的 Conv2D）来处理。 
 
+> 可以将层看作深度学习的乐高积木，Keras 等框架则将这种比喻具体化。
 
+- 在 Keras 中，构 建深度学习模型就是==将相互兼容的多个层拼接在一起，以建立有用的数据变换流程==。这里层兼 容性（layer compatibility）具体指的是每一层==只接受特定形状的输入张量，并返回特定形状的输 出张量==
 
+```python
+from keras import layers 
+# 有32个输出单元的密集层
+# 创建了一个层，只接受第一个维度大小为784 的 2D 张量（第0 轴是批量维度，其大 小没有指定，因此可以任意取值）作为输入
+layer = layers.Dense(32, input_shape=(784,)) 
 
+# 使用Keras 时，你无须担心 兼容性，因为向模型中添加的层都会自动匹配输入层的形状
+from keras import models from keras import layers 
+model = models.Sequential() model.add(layers.Dense(32, input_shape=(784,))) model.add(layers.Dense(32))
+# 第二层没有输入形状（input_shape）的参数，相反，它可以自动推导出输入形状等于上一层的输出形状
+```
 
+##### 3.1.2模型：层构成的网络
 
+> 深度学习模型是层构成的有向无环图。最常见的例子就是层的线性堆叠，将单一输入映射 为单一输出
 
+- 随着深入学习，你会接触到更多类型的网络拓扑结构
+  - 双分支（two-branch）网络
+  - 多头（multihead）网络
+  -  Inception 模块 
+- 网络的拓扑结构定义了一个假设空间（hypothesis space）。
 
+##### 3.1.3损失函数和优化器：配置学习过程的关键
 
+- 一旦确定了网络架构，你还需要选择以下两个参数
+  - 损失函数（目标函数）——在训练过程中需要将其最小化。它能够衡量当前任务是否已 成功完成
+  - 优化器——决定如何基于损失函数对网络进行更新。它执行的是随机梯度下降（SGD） 的某个变体
 
+- 具有多个输出的神经网络可能具有多个损失函数（每个输出对应一个损失函数），但是，梯 度下降过程必须基于单个标量损失值。因此，对于具有多个损失函数的网络，需要将所有损失 函数取平均，变为一个标量值。
 
+- 一定要明智地选择目标函数，否则你将会遇到意想不到的副作用
+  - 于二分类问题，你可以使用二元交叉熵（binary crossentropy）损 失函数；
+  - 多分类问题，可以用分类交叉熵（categorical crossentropy）损失函数；
+  - 序列学习问题，可以用联结主义 时序分类（CTC，connectionist temporal classification）损失函数
 
+#### 3.2 Keras简介
 
+> Keras 是一个Python 深度学习框架，可以方便地定 义和训练几乎所有类型的深度学习模型
 
+- Keras重要特性
+  - 相同的代码可以在 CPU 或 GPU 上无缝切换运行
+  - 具有用户友好的 API，便于快速开发深度学习模型的原型
+  - 内置支持卷积网络（用于计算机视觉）、循环网络（用于序列处理）以及二者的任意 组合。
+  - 支持任意网络架构：多输入或多输出模型、层共享、模型共享等。这也就是说，Keras 能够构建任意深度学习模型，无论是生成式对抗网络还是神经图灵机
 
+##### 3.2.1Keras、TensorFlow、Theano 和 CNTK 
 
+> Keras 是一个模型级（model-level）的库，为开发深度学习模型提供了高层次的构建模块。 它不处理张量操作、求微分等低层次的运算。相反，它依赖于一个专门的、高度优化的张量库 来完成这些运算，这个张量库就是Keras 的后端引擎（backend engine）。 
+>
+> Keras 没有选择单个张 量库并将Keras 实现与这个库绑定，而是以模块化的方式处理这个问题（见图3-3）。因此，几 个不同的后端引擎都可以无缝嵌入到 Keras 中。目前，Keras 有三个后端实现：TensorFlow 后端、 Theano 后端和微软认知工具包（CNTK，Microsoft cognitive toolkit）后端。
+>
+> > TensorFlow、CNTK 和 Theano 是当今深度学习的几个主要平台。Theano 由蒙特利尔大学的 MILA 实验室开发，TensorFlow 由 Google 开发，CNTK 由微软开发
+>
+> > 用Keras 写的每一段代 码都可以在这三个后端上运行，无须任何修改,这通常是很有用
+> >
+> > > 例如，对于特定任务，某个后端的速度更快，那么我们就可以无缝切换过去
+> > >
+> > > - 推荐使用TensorFlow 后端作为大部分深度学习任务的默认后端，因为它 的==应用最广泛，可扩展，而且可用于生产环境==
+> > > - 在 CPU 上运行 时，TensorFlow 本身封装了一个低层次的张量运算库，叫作==Eigen==；在GPU 上运行时，TensorFlow 封装了一个高度优化的深度学习运算库，叫作==NVIDIA CUDA==深度神经网络库
+
+##### 3.2.2使用 Keras 开发：概述 
+
+(1) 定义训练数据：输入张量和目标张量。
+
+(2) 定义层组成的网络（或模型），将输入映射到目标。 
+
+(3) 配置学习过程：选择损失函数、优化器和需要监控的指标。 
+
+(4) 调用模型的 fit 方法在训练数据上进行迭代。 
+
+- 定义模型有两种方法：
+  - 一种是使用 Sequential 类（仅用于==层的线性堆叠==，这是目前最常 见的网络架构）
+  - 另一种是函数式 API（functional API，用于==层组成的有向无环图==，让你可以构 建任意形式的架构）
+
+- 定义好了模型架构，使用 Sequential 模型还是函数式API 就不重要了。接下来的步 骤都是相同的
+- 配置学习过程是在编译这一步，你需要指定模型使用的优化器和损失函数，以及训练过程 中想要监控的指标。
+- 学习过程就是通过 fit() 方法将输入数据的Numpy 数组（和对应的目标数据）传 入模型
+
+#### 3.3建立深度学习工作站
+
+即使是可以在 CPU 上运行的深度学习应用，使用现代 GPU 通常也可以将速度提高 5 倍或 10 倍。 如果你不想在计算机上安装 GPU，也可以考虑在 AWS EC2 GPU 实例或 Google 云平台上运行深 度学习实验
+
+#### 3.4 电影评论分类：二分类问题
+
+> 二分类问题可能是应用最广泛的机器学习问题,在这个例子中，你将学习根据电影评论的 文字内容将其划分为正面或负面
+
+##### 3.4.1IMDB数据集
+
+- 本节使用IMDB 数据集，它包含来自互联网电影数据库（IMDB）的50 000 条严重两极分 化的评论
+- 数据集被分为用于训练的 25 000 条评论与用于测试的 25 000 条评论，训练集和测试 集都包含 50% 的正面评论和 50% 的负面评论
+
+- 与 MNIST 数据集一样，IMDB 数据集也内置于 Keras 库。它已经过预处理：==评论==（单词序列） 已经被转换为==整数序列==，其中每个整数代表字典中的==某个单词==
+
+> imdb.py 的位置：
+>
+> C:\Users\Dell\Anaconda3\envs\tensorflow\Lib\site-packages\keras\datasets
+>
+> ```
+> # 读取数据时出错
+> Object arrays cannot be loaded when allow_pickle=False
+> # 打开imdb.py 文件，将np.load(path) 改为np.load(path, allow_pickle=True)
+> # 重启kernel
+> ```
+
+- 加载数据集
+
+  ```python
+  from keras.datasets import imdb
+  # num_words的意思是仅保留训练数据中前10000个最常出现的单词，低频词会被舍弃
+  # 这样得到的向量数据不会太大，便于处理
+  (train_data,train_labels),(test_data,test_labels) = imdb.load_data(num_words=10000)
+  # train_data\test_data是单词索引组成的列表
+  # t\rain_labels\test_labels是0或1组成的列表，代表正负面
+  # 由于限定为前 10 000 个最常见的单词，单词索引都不会超过 10 000
+  max(max(i for i in train_data))
+  >>>9995
+  # 获取索引和单词的对应字典
+  word_index = imdb.get_word_index()
+  
+  # 把评论转为语句
+  # 将评论解码。注意，索引减去了3，
+  # 因为0、1、2 是为“padding”（填充）,“ start of sequence”（序 列开始）,“unknown”（未知词）分别保留的索引
+  decoded_review = ' '.join([reverse_word_index.get(i-3,'?') for i in train_data[0]])
+  decoded_review
+  >>>"? this film was just brilliant casting location scenery story direction everyone's really suited the part they played and you could just imagine being there robert ? is an amazing actor and now the same being director ? father came from the same scottish island as myself so i loved the fact there was a real connection with this film the witty remarks throughout the film were great it was just brilliant so much that i bought the film as soon as it was released for ? and would recommend it to everyone to watch and the fly fishing was amazing really cried at the end it was so sad and you know what they say if you cry at a film it must have been good and this definitely was also ? to the two little boy's that played the ? of norman and paul they were just brilliant children are often left out of the ? list i think because the stars that play them all grown up are such a big profile for the whole film but these children are amazing and should be praised for what they have done don't you think the whole story was so lovely because it was true and was someone's life after all that was shared with us all"
+  ```
+
+##### 3.4.2准备数据
+
+> 不能将整数序列直接输入神经网络。你需要将列表转换为张量,方法有以下两种:
+>
+> - ==填充列表，使其具有相同的长度==，再将列表转换成形状为 (samples, word_indices) 的整数张量，然后网络第一层使用能处理这种整数张量的层( Embedding 层)
+> -  对列表进行 ==one-hot 编码[==，将其转换为 0 和 1 组成的向量。举个例子，序列 [3, 5] 将会 被转换为10 000 维向量，只有索引为3 和 5 的元素是1，其余元素都是0。然后网络第 一层可以用 Dense 层，它能够处理浮点数向量数据
+
+```python
+# 将整数序列编码为二进制矩阵 
+import numpy as np
+
+def vectoriza_sequeces(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1
+    return results
+
+x_train = vectoriza_sequeces(train_data)
+xtest = vectoriza_sequeces(test_data)
+# 将标签向量化
+print(len(train_labels))
+y_train = np.asarray(train_labels,dtype='float32')
+y_test = np.asarray(test_labels,dtype='float32')
+```
+
+##### 3.4.3构建网络
+
+> 输入数据是向量，而标签是标量（1 和 0），这是你会遇到的最简单的情况
+>
+> 带有relu 激活的全连接层（Dense）的简单堆叠在这种问题上表现很好,比如：
+>
+> Dense(16, activation='relu')
+>
+> -  Dense 层的参数（16）是该层隐藏单元的个数
+>   - 一个隐藏单元（hidden unit）是该层 表示空间的一个维度
 
 
 
