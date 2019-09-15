@@ -577,8 +577,13 @@
     > ![013](D:\project\DL\03_pythonDL\img\013.JPG)
 
     > - 在某个参数值附近，有一个局部极小点（local minimum）：在这个点附近，向 左移动和向右移动都会导致损失值增大。如果使用小学习率的SGD 进行优化，那么优化过程可 能会陷入局部极小点，导致无法找到全局最小点。 
-    >
-    > - 使用动量方法可以避免这样的问题，这一方法的灵感来源于物理学。有一种有用的思维图像， 就是将优化过程想象成一个小球从损失函数曲线上滚下来。如果小球的动量足够大，那么它不会 卡在峡谷里，最终会到达全局最小点。动量方法的实现过程是每一步都移动小球，不仅要考虑当 前的斜率值（当前的加速度），还要考虑当前的速度（来自于之前的加速度）。这在实践中的是指， 更新参数 w 不仅要考虑当前的梯度值，还要考虑上一次的参数更新，
+    > - 使用动量方法可以避免这样的问题，这一方法的灵感来源于物理学。有一种有用的思维图像， 就是将优化过程想象成一个小球从损失函数曲线上滚下来。如果小球的动量足够大，那么它不会 卡在峡谷里，最终会到达全局最小点。动量方法的实现过程是每一步都移动小球，不仅要考虑当 前的斜率值（当前的加速度），还要考虑当前的速度（来自于之前的加速度）。这在实践中的是指， 更新参数 w 不仅要考虑当前的梯度值，还要考虑上一次的参数更新
+
+
+
+- [ ] 不同优化器的了解
+
+
 
 ##### 2.4.4链式求导：反向传播算法
 
@@ -617,9 +622,15 @@
 
 ![014](D:\project\DL\03_pythonDL\img\014.JPG)
 
-- 多个层连接在一起组成了网络，将输入数据转换为预测值
-- 损失函数将这些预测值与目标进行比较，得到损失值，用于衡量网络预测值与预期结果的匹配程度
-- 优化器使用损失值来更新网络的权重
+	> 四者的关系:
+	>
+	> 多个层连接在一起组成了网络，将输入数据转换为预测值
+	>
+	> 损失函数将这些预测值与目标进行比较，得到损失值，用于衡量网络预测值与预期结果的匹配程度
+	>
+	> 优化器使用损失值来更新网络的权重
+
+
 
 ##### 3.1.1层：深度学习的基础组件
 
@@ -629,18 +640,17 @@
 >
 > 权重是利用随机梯度下降学到的一个或多个张量
 
-- 简单的向量数据保存在 形状为 (samples, features) 的 2D 张量中，通常用==密集连接层==［densely connected layer，也 叫==全连接层==（fully connected layer）或==密集层==（dense layer），对应于Keras 的 Dense 类］来处 理
-- 序列数据保存在形状为 (samples, timesteps, features) 的 3D 张量中，通常用循环 层（recurrent layer，比如Keras 的 LSTM 层）来处理。
-- 图像数据保存在4D 张量中，通常用二维 卷积层（Keras 的 Conv2D）来处理。 
+- 简单的向量数据保存在 形状为 (samples, features) 的 ==2D 张量==中，通常用密集连接层［densely connected layer，也 叫全连接层（fully connected layer）或密集层（dense layer），对应于Keras 的 ==Dense== 类］来处 理
+- 序列数据保存在形状为 (samples, timesteps, features) 的 ==3D 张量==中，通常用循环 层（recurrent layer，比如Keras 的 ==LSTM 层==）来处理。
+- 图像数据保存在==4D 张量==中，通常用二维 卷积层（Keras 的 ==Conv2D==）来处理。 
 
 > 可以将层看作深度学习的乐高积木，Keras 等框架则将这种比喻具体化。
 
-- 在 Keras 中，构 建深度学习模型就是==将相互兼容的多个层拼接在一起，以建立有用的数据变换流程==。这里层兼 容性（layer compatibility）具体指的是每一层==只接受特定形状的输入张量，并返回特定形状的输 出张量==
+- 在 Keras 中，构 建深度学习模型就是将相互兼容的多个层拼接在一起，以建立有用的数据变换流程。这里层兼 容性（layer compatibility）具体指的是每一层==只接受特定形状的输入张量，并返回特定形状的输 出张量==
 
 ```python
 from keras import layers 
-# 有32个输出单元的密集层
-# 创建了一个层，只接受第一个维度大小为784 的 2D 张量（第0 轴是批量维度，其大 小没有指定，因此可以任意取值）作为输入
+# 创建了一个层，只接受第一个维度大小为784 的 2D 张量（第0 轴是批量维度，其大 小没有指定，因此可以任意取值）作为输入,该层将返回一个张量，第一个维度大小变成32
 layer = layers.Dense(32, input_shape=(784,)) 
 
 # 使用Keras 时，你无须担心 兼容性，因为向模型中添加的层都会自动匹配输入层的形状
@@ -648,6 +658,35 @@ from keras import models from keras import layers
 model = models.Sequential() model.add(layers.Dense(32, input_shape=(784,))) model.add(layers.Dense(32))
 # 第二层没有输入形状（input_shape）的参数，相反，它可以自动推导出输入形状等于上一层的输出形状
 ```
+
+- dense层
+
+  ```
+  layers.Dense(
+      units,
+      activation=None,
+      use_bias=True,
+      kernel_initializer='glorot_uniform',
+      bias_initializer='zeros',
+      kernel_regularizer=None,
+      bias_regularizer=None,
+      activity_regularizer=None,
+      kernel_constraint=None,
+      bias_constraint=None,
+      **kwargs,
+  )
+  ```
+
+  - **units:**该层有几个神经元
+  - **activation:**该层使用的激活函数
+  - **use_bias:**是否添加偏置项
+  - **kernel_initializer:**权重初始化方法
+  - **bias_initializer:**偏置值初始化方法
+  - **kernel_regularizer:**权重规范化函数
+  - **bias_regularizer:**偏置值规范化方法
+  - **activity_regularizer:**输出的规范化方法
+  - **kernel_constraint:**权重变化限制函数
+  - **bias_constraint:**偏置值变化限制函数
 
 - 总结：
   - 层对象接受张量为参数，返回一个张量
@@ -662,18 +701,23 @@ model = models.Sequential() model.add(layers.Dense(32, input_shape=(784,))) mode
   - 双分支（two-branch）网络
   - 多头（multihead）网络
   -  Inception 模块 
+
 - 网络的拓扑结构定义了一个假设空间（hypothesis space）。
+
+  >机器学习 的定义：“在预先定义好的可能性空间中，利用反馈信号的指引来寻找输入数据的有用表示。” 
+
+  选定了网络拓扑结构，意味着将可能性空间（假设空间）限定为一系列特定的==张量运算==，将输 入数据映射为输出数据。然后，你需要为这些张量运算的权重张量找到一组合适的值
 
 ##### 3.1.3损失函数和优化器：配置学习过程的关键
 
 - 一旦确定了网络架构，你还需要选择以下两个参数
-  - 损失函数（目标函数）——在训练过程中需要将其最小化。它能够衡量当前任务是否已 成功完成
-  - 优化器——决定如何基于损失函数对网络进行更新。它执行的是随机梯度下降（SGD） 的某个变体
+  - 损失函数（目标函数）——在训练过程中需要==将其最小化==。它能够衡量当前任务是否已 成功完成
+  - 优化器——决定如何基于损失函数对网络进行更新。它执行的是==随机梯度下降==（SGD） 的某个变体
 
 - 具有多个输出的神经网络可能具有多个损失函数（每个输出对应一个损失函数），但是，梯 度下降过程必须基于单个标量损失值。因此，对于具有多个损失函数的网络，需要将所有损失 函数取平均，变为一个标量值。
 
 - 一定要明智地选择目标函数，否则你将会遇到意想不到的副作用
-  - 于二分类问题，你可以使用二元交叉熵（binary crossentropy）损 失函数；
+  - 二分类问题，你可以使用二元交叉熵（binary crossentropy）损 失函数；
   - 多分类问题，可以用分类交叉熵（categorical crossentropy）损失函数；
   - 序列学习问题，可以用联结主义 时序分类（CTC，connectionist temporal classification）损失函数
 
@@ -902,24 +946,185 @@ y_test = np.asarray(test_labels,dtype='float32')
     - 无论你的问题是什么，rmsprop 优化器通常都是足够好的选择。这一点你无须担心
     - 随着神经网络在训练数据上的表现越来越好，模型最终会过拟合，并在前所未见的数据 上得到越来越差的结果。一定要一直监控模型在训练集之外的数据上的性能
 
-- 新闻分类：多分类问题
+
+##### 新闻分类：多分类问题
+
+上一节中，我们介绍了如何用密集连接的神经网络将向量输入划分为两个互斥的类别，
+
+本节你会构建一个网络，将路透社新闻划分为46 个互斥的主题。因为有多个类别，所以 这是多分类（multiclass classification）问题
+
+因为每个数据点只能划分到一个类别， 所以更具体地说，这是单标签、多分类（single-label, multiclass classification）问题
+
+如果每个数据点可以划分到多个类别（主题），那它就是一个多标签、多分类（multilabel, multiclass classification）问题
+
+- 路透社数据集
+
+  路透社数据集，它包含许多短新闻及其对应的主题，由路透社在1986 年发布。它 是一个简单的、广泛使用的文本分类数据集。它包括46 个不同的主题：某些主题的样本更多， 但训练集中每个主题都有至少 10 个样本
+
+  与 IMDB 和 MNIST 类似，路透社数据集也内置为 Keras 的一部分
 
 
 
+compile函数学习补充：
+
+```
+compile(optimizer, loss=None, metrics=None, loss_weights=None, sample_weight_mode=None, weighted_metrics=None, target_tensors=None)
+
+optimizer: 字符串（优化器名）或者优化器实例
+loss: 字符串（目标函数名）或目标函数
+metrics: 在训练和测试期间的模型评估标准
+	通常你会使用 metrics = ['accuracy']
+	为多输出模型的不同输出指定不同的评估标准,metrics = {'output_a'：'accuracy'}
+loss_weights: 可选的指定标量系数（Python 浮点数）的列表或字典， 用以衡量损失函数对不同的模型输出的贡献
+sample_weight_mode: 如果你需要执行按时间步采样权重（2D 权重），请将其设置为 temporal
+weighted_metrics: 在训练和测试期间，由 sample_weight 或 class_weight 评估和加权的度量标准列表
+```
 
 
 
+```python
+from keras.datasets import reuters 
 
+# num_words=10000 将数据限定为前 10 000 个最常出现的单词
+(train_data, train_labels), (test_data, test_labels) = reuters.load_data(     num_words=10000) 
 
+# 每个样本都是一个整数列表（表示单词索引）
+train_data[10] 
+>>> [1, 245, 273, 207, 156, 53, 74, 160, 26, 14, 46, 296, 26, 39, 74, 2979, 3554, 14, 46, 4689, 4329, 86, 61, 3499, 4795, 14, 61, 451, 4329, 17, 12]
 
+# 解码索引
+word_index = reuters.get_word_index()
+reverse_word_index =  dict([(value, key) for (key, value) in word_index.items()]) 
+# 索引减去了3，因为0、1、2 是为“padding”（填充）、“ start of sequence”（序列开始）、“unknown”（未知词）分别保留的索引
+decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in     train_data[0]])
 
+# 样本对应的标签是一个 0~45 范围内的整数，即话题索引编号
+train_labels[10] 
+>>>3
+```
 
+- 准备数据
 
+  将数据向量化：
 
+  ```python
+  #  编码数据 
+  import numpy as np 
+  
+  def vectorize_sequences(sequences, dimension=10000):
+      results = np.zeros((len(sequences),dimension))
+      for i,seq in enumerate(sequences):
+          results[i,seq] = 1
+      return results
+  
+  x_train = vectorize_sequences(train_data) 
+  x_test = vectorize_sequences(test_data) 
+  ```
 
+  将标签向量化有两种方法：
 
+  - 你可以将标签列表转换为整数张量
 
+  - 或者使用one-hot 编码 
 
+    > one-hot 编码是分类数据广泛使用的一种格式，也叫分类编码（categorical encoding）
+
+    ```python
+    def to_one_hot(labels,dimension=46):
+        results = np.zeros((len(labels),dimension))
+        for i,label in enumerete(labels):
+            results[i,label] = 1
+        return results
+    
+    # 将训练标签向量化
+    one_hot_train_labels = to_one_hot(train_labels) 
+    # 将测试标签向量化
+    one_hot_test_labels = to_one_hot(test_labels) 
+    ```
+
+  Keras 内置方法可以实现这个操作
+
+  ```
+  from keras.utils.np_utils import to_categorical
+  one_hot_train_labels = to_categorical(train_labels)
+  one_hot_test_labels = to_categorical(test_labels)
+  ```
+
+- 构建网络
+
+  对文本片段进行分类，输出类别的数量从2 个变为46 个。输出空间的维 度要大得多
+
+  对于Dense层的堆叠，每层只能访问上层输出的信息，如果某层丢失了于分类相关的信息，后面的层无法找回，也就是说每层都可能成为信息瓶颈，处于这个原因，下面使用更大的层，包含64个单元
+
+  ```python
+  from keras import models
+  from keras import layers
+  
+  model = models.Sequential()
+  model.add(layers.Dense(64,activation='relu',input_shape=(10000,)))
+  model.add(layers.Dense(64,activation='relu'))
+  model.add(layers.Dense(46,activation='softmax'))
+  '''
+   网络的最后一层是大小为46 的 Dense 层。这意味着，对于每个输入样本，网络都会输 出一个 46 维向量。这个向量的每个元素（即每个维度）代表不同的输出类别,最后一层使用了 softmax 激活,网络将输出在46 个不同输出类别上的概率分布——对于每一个输入样本，网络都会输出一个 46 维向量， 其中 output[i] 是样本属于第 i 个类别的概率。46 个概率的总和为 1。 
+   '''
+  
+  '''对于这个例子，最好的损失函数是 categorical_crossentropy（分类交叉熵）。它用于 衡量两个概率分布之间的距离，这里两个概率分布分别是网络输出的概率分布和标签的真实分 布。通过将这两个分布的距离最小化，训练网络可使输出结果尽可能接近真实标签'''
+  ```
+
+- 编译模型
+
+  ```python
+  model.compile(optimizer='rmsprop',
+                loss='categorical_crossentropy',
+                metrics=['accuracy'])
+  ```
+
+- 验证
+
+  我们在训练数据中留出 1000 个样本作为验证集
+
+  ```python
+  # 留出训练验证集
+  x_val = x_train(1000:)
+  partial_x_train = x_train(:1000)
+  # 留出标签验证集
+  y_val = one_hot_train_labels[:1000]
+  partial_y_train = one_hot_train_labels
+  ```
+
+- 训练模型
+
+  ```python
+  history = model.fit(partial_x_train,
+                     partial_y_train,
+                     epochs=20,
+                     batch_size=512,
+                     validation_data=(x_val,y_val))
+  ```
+
+- 绘制训练损失和验证损失、训练精度和验证精度的图像
+
+  ```python
+  # 训练损失和验证损失
+  import matplotlib.pyplot as plt 
+   
+  loss = history.history['loss'] val_loss = history.history['val_loss'] 
+   
+  epochs = range(1, len(loss) + 1) 
+   
+  plt.plot(epochs, loss, 'bo', label='Training loss') plt.plot(epochs, val_loss, 'b', label='Validation loss') plt.title('Training and validation loss') plt.xlabel('Epochs') plt.ylabel('Loss') plt.legend() 
+   
+  plt.show()
+  
+  # 训练精度和验证精度
+  acc = history.history['acc'] val_acc = history.history['val_acc'] 
+   
+  plt.plot(epochs, acc, 'bo', label='Training acc') plt.plot(epochs, val_acc, 'b', label='Validation acc') plt.title('Training and validation accuracy') plt.xlabel('Epochs') plt.ylabel('Accuracy') plt.legend() 
+   
+  plt.show() 
+  ```
+
+  
 
 
 
